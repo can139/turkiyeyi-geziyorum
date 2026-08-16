@@ -1,5 +1,10 @@
 import { useState, useEffect, useRef } from "react";
+import { createClient } from "@supabase/supabase-js";
 import { MapPin, Check, Lock, Unlock, Calendar, Video, X, StampIcon, Camera, Trash2 } from "lucide-react";
+
+const SUPABASE_URL = "https://bbfsvvnxqzwzyzyuqbbv.supabase.co";
+const SUPABASE_KEY = "sb_publishable_VTT3d27QgklQzwk04LMnZA_JbSwitYR";
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const PROVINCES = [
   { code: "01", name: "Adana", region: "Akdeniz" },
@@ -103,13 +108,21 @@ export default function TurkiyeGeziyorum() {
   const fileInputRef = useRef(null);
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem("province-data");
-      setData(raw ? JSON.parse(raw) : {});
-    } catch {
-      setData({});
-    }
-    setLoading(false);
+    (async () => {
+      try {
+        const { data: rows, error } = await supabase.from("provinces").select("code, data");
+        if (error) throw error;
+        const obj = {};
+        (rows || []).forEach((r) => {
+          obj[r.code] = r.data;
+        });
+        setData(obj);
+      } catch (e) {
+        console.error("Yükleme hatası:", e);
+        setData({});
+      }
+      setLoading(false);
+    })();
   }, []);
 
   const visitedCount = Object.values(data).filter((d) => d?.visited).length;
@@ -144,12 +157,23 @@ export default function TurkiyeGeziyorum() {
     setLoginError(false);
   }
 
-  function saveDraft() {
+  async function saveDraft() {
     setSaving(true);
-    const next = { ...data, [selected.code]: draft };
     try {
-      localStorage.setItem("province-data", JSON.stringify(next));
-      setData(next);
+      const { data: existing } = await supabase
+        .from("provinces")
+        .select("id")
+        .eq("code", selected.code)
+        .maybeSingle();
+
+      let error;
+      if (existing) {
+        ({ error } = await supabase.from("provinces").update({ data: draft }).eq("code", selected.code));
+      } else {
+        ({ error } = await supabase.from("provinces").insert({ code: selected.code, data: draft }));
+      }
+      if (error) throw error;
+      setData((prev) => ({ ...prev, [selected.code]: draft }));
     } catch (e) {
       console.error("Kayıt hatası:", e);
     }
