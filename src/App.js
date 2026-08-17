@@ -152,6 +152,30 @@ function TurkeyMap({ data, onSelectProvince }) {
           </path>
         );
       })}
+      {geo.features.map((f) => {
+        const code = String(f.id).padStart(2, "0");
+        const province = PROVINCES.find((p) => p.code === code);
+        if (!province) return null;
+        const visited = data[code]?.visited;
+        const [cx, cy] = pathGen.centroid(f);
+        return (
+          <text
+            key={`label-${code}`}
+            x={cx}
+            y={cy}
+            textAnchor="middle"
+            dominantBaseline="middle"
+            className="pointer-events-none select-none"
+            style={{
+              fontSize: 4.4,
+              fill: visited ? "#10152A" : "#8B93B0",
+              fontFamily: "'Segoe UI', ui-sans-serif, system-ui",
+            }}
+          >
+            {province.name}
+          </text>
+        );
+      })}
     </svg>
   );
 }
