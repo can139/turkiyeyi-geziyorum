@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { createClient } from "@supabase/supabase-js";
 import * as d3 from "d3";
-import { MapPin, Check, Lock, Unlock, Calendar, Video, X, StampIcon, Camera, Trash2, Map as MapIcon, LayoutGrid } from "lucide-react";
+import { MapPin, Check, Lock, Unlock, Calendar, Video, X, StampIcon, Camera, Trash2, Map as MapIcon, LayoutGrid, Share2 } from "lucide-react";
 
 const GEOJSON_URL = "https://raw.githubusercontent.com/cihadturhan/tr-geojson/master/geo/tr-cities-utf8.json";
 
@@ -161,6 +161,7 @@ export default function TurkiyeGeziyorum() {
   const [loading, setLoading] = useState(true);
   const [activeRegion, setActiveRegion] = useState("Tümü");
   const [viewMode, setViewMode] = useState("grid");
+  const [shareCopied, setShareCopied] = useState(false);
   const [selected, setSelected] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
@@ -189,6 +190,26 @@ export default function TurkiyeGeziyorum() {
   }, []);
 
   const visitedCount = Object.values(data).filter((d) => d?.visited).length;
+
+  async function handleShare() {
+    const shareText = `Türkiye'yi Geziyorum · ${visitedCount}/81 il tamamladım! 🇹🇷`;
+    const shareUrl = window.location.href;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: "Türkiye'yi Geziyorum", text: shareText, url: shareUrl });
+      } catch (e) {
+        // kullanıcı paylaşımı iptal etmiş olabilir, sorun değil
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(`${shareText} ${shareUrl}`);
+        setShareCopied(true);
+        setTimeout(() => setShareCopied(false), 2000);
+      } catch (e) {
+        console.error("Kopyalama hatası:", e);
+      }
+    }
+  }
   const progress = Math.round((visitedCount / 81) * 100);
 
   const filtered = PROVINCES.filter((p) => activeRegion === "Tümü" || p.region === activeRegion);
@@ -269,13 +290,22 @@ export default function TurkiyeGeziyorum() {
             </h1>
             <p className="text-sm text-[#8B93B0] mt-1">81 ilde bir yolculuğun günlüğü</p>
           </div>
-          <button
-            onClick={() => (isAdmin ? setIsAdmin(false) : setShowLogin(true))}
-            className="shrink-0 flex items-center gap-1.5 text-xs px-3 py-2 rounded-full border border-[#2A3358] bg-[#1C2440] hover:bg-[#232C4D] transition-colors"
-          >
-            {isAdmin ? <Unlock size={14} className="text-[#D9A544]" /> : <Lock size={14} />}
-            {isAdmin ? "Düzenleniyor" : "Giriş"}
-          </button>
+          <div className="shrink-0 flex items-center gap-2">
+            <button
+              onClick={handleShare}
+              className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-full border border-[#2A3358] bg-[#1C2440] hover:bg-[#232C4D] transition-colors"
+            >
+              <Share2 size={14} />
+              {shareCopied ? "Kopyalandı!" : "Paylaş"}
+            </button>
+            <button
+              onClick={() => (isAdmin ? setIsAdmin(false) : setShowLogin(true))}
+              className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-full border border-[#2A3358] bg-[#1C2440] hover:bg-[#232C4D] transition-colors"
+            >
+              {isAdmin ? <Unlock size={14} className="text-[#D9A544]" /> : <Lock size={14} />}
+              {isAdmin ? "Düzenleniyor" : "Giriş"}
+            </button>
+          </div>
         </div>
 
         {/* Progress */}
