@@ -1,6 +1,9 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { createClient } from "@supabase/supabase-js";
-import { MapPin, Check, Lock, Unlock, Calendar, Video, X, StampIcon, Camera, Trash2 } from "lucide-react";
+import * as d3 from "d3";
+import { MapPin, Check, Lock, Unlock, Calendar, Video, X, StampIcon, Camera, Trash2, Map as MapIcon, LayoutGrid } from "lucide-react";
+
+const GEOJSON_URL = "https://raw.githubusercontent.com/cihadturhan/tr-geojson/master/geo/tr-cities-utf8.json";
 
 const SUPABASE_URL = "https://bbfsvvnxqzwzyzyuqbbv.supabase.co";
 const SUPABASE_KEY = "sb_publishable_VTT3d27QgklQzwk04LMnZA_JbSwitYR";
@@ -94,10 +97,70 @@ const REGIONS = ["Tümü", "Marmara", "Ege", "Akdeniz", "İç Anadolu", "Karaden
 
 const ADMIN_PASSWORD = "Nisan2304";
 
+function TurkeyMap({ data, onSelectProvince }) {
+  const [geo, setGeo] = useState(null);
+  const [geoError, setGeoError] = useState(false);
+
+  useEffect(() => {
+    fetch(GEOJSON_URL)
+      .then((r) => {
+        if (!r.ok) throw new Error("Harita verisi alınamadı");
+        return r.json();
+      })
+      .then(setGeo)
+      .catch(() => setGeoError(true));
+  }, []);
+
+  const width = 780;
+  const height = 400;
+
+  const pathGen = useMemo(() => {
+    if (!geo) return null;
+    const projection = d3.geoMercator().fitSize([width, height], geo);
+    return d3.geoPath(projection);
+  }, [geo]);
+
+  if (geoError) {
+    return (
+      <p className="text-sm text-[#6B7299] py-10 text-center">
+        Harita şu anda yüklenemedi, bağlantını kontrol edip sayfayı yenile.
+      </p>
+    );
+  }
+
+  if (!geo || !pathGen) {
+    return <p className="text-[#8B93B0] text-sm py-10 text-center">Harita yükleniyor...</p>;
+  }
+
+  return (
+    <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto select-none">
+      {geo.features.map((f) => {
+        const code = String(f.id).padStart(2, "0");
+        const province = PROVINCES.find((p) => p.code === code);
+        const visited = data[code]?.visited;
+        return (
+          <path
+            key={code}
+            d={pathGen(f)}
+            fill={visited ? "#D9A544" : "#232C4D"}
+            stroke="#10152A"
+            strokeWidth={0.6}
+            className="cursor-pointer transition-colors hover:opacity-80"
+            onClick={() => province && onSelectProvince(province)}
+          >
+            <title>{province ? `${province.code} · ${province.name}` : ""}</title>
+          </path>
+        );
+      })}
+    </svg>
+  );
+}
+
 export default function TurkiyeGeziyorum() {
   const [data, setData] = useState({});
   const [loading, setLoading] = useState(true);
   const [activeRegion, setActiveRegion] = useState("Tümü");
+  const [viewMode, setViewMode] = useState("grid");
   const [selected, setSelected] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
@@ -232,26 +295,51 @@ export default function TurkiyeGeziyorum() {
         </div>
       </div>
 
-      {/* Region tabs */}
-      <div className="max-w-3xl mx-auto px-5 pt-5">
+      {/* View toggle */}
+      <div className="max-w-3xl mx-auto px-5 pt-5 flex items-center justify-between gap-3">
         <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1">
-          {REGIONS.map((r) => (
-            <button
-              key={r}
-              onClick={() => setActiveRegion(r)}
-              className={`shrink-0 text-xs px-3.5 py-2 rounded-full border transition-colors ${
-                activeRegion === r
-                  ? "bg-[#D9A544] text-[#10152A] border-[#D9A544] font-medium"
-                  : "border-[#2A3358] text-[#8B93B0] hover:border-[#4A5590]"
-              }`}
-            >
-              {r}
-            </button>
-          ))}
+          {viewMode === "grid" &&
+            REGIONS.map((r) => (
+              <button
+                key={r}
+                onClick={() => setActiveRegion(r)}
+                className={`shrink-0 text-xs px-3.5 py-2 rounded-full border transition-colors ${
+                  activeRegion === r
+                    ? "bg-[#D9A544] text-[#10152A] border-[#D9A544] font-medium"
+                    : "border-[#2A3358] text-[#8B93B0] hover:border-[#4A5590]"
+                }`}
+              >
+                {r}
+              </button>
+            ))}
+        </div>
+        <div className="shrink-0 flex gap-1 border border-[#2A3358] rounded-full p-1">
+          <button
+            onClick={() => setViewMode("grid")}
+            className={`p-1.5 rounded-full transition-colors ${viewMode === "grid" ? "bg-[#D9A544] text-[#10152A]" : "text-[#8B93B0]"}`}
+            aria-label="Liste görünümü"
+          >
+            <LayoutGrid size={15} />
+          </button>
+          <button
+            onClick={() => setViewMode("map")}
+            className={`p-1.5 rounded-full transition-colors ${viewMode === "map" ? "bg-[#D9A544] text-[#10152A]" : "text-[#8B93B0]"}`}
+            aria-label="Harita görünümü"
+          >
+            <MapIcon size={15} />
+          </button>
         </div>
       </div>
 
+      {/* Map */}
+      {viewMode === "map" && (
+        <div className="max-w-3xl mx-auto px-5 py-5">
+          <TurkeyMap data={data} onSelectProvince={openProvince} />
+        </div>
+      )}
+
       {/* Grid */}
+      {viewMode === "grid" && (
       <div className="max-w-3xl mx-auto px-5 py-5">
         {loading ? (
           <p className="text-[#8B93B0] text-sm py-10 text-center">Yükleniyor...</p>
@@ -293,6 +381,7 @@ export default function TurkiyeGeziyorum() {
           </div>
         )}
       </div>
+      )}
 
       {/* Login popover */}
       {showLogin && (
