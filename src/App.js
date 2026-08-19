@@ -193,7 +193,10 @@ export default function TurkiyeGeziyorum() {
   const [loginError, setLoginError] = useState(false);
   const [draft, setDraft] = useState({ visited: false, date: "", note: "", video: "", photos: [] });
   const [saving, setSaving] = useState(false);
+  const [coverPhoto, setCoverPhoto] = useState(null);
+  const [coverUploading, setCoverUploading] = useState(false);
   const fileInputRef = useRef(null);
+  const coverInputRef = useRef(null);
 
   useEffect(() => {
     (async () => {
@@ -204,6 +207,8 @@ export default function TurkiyeGeziyorum() {
         (rows || []).forEach((r) => {
           obj[r.code] = r.data;
         });
+        if (obj["cover"]?.photo) setCoverPhoto(obj["cover"].photo);
+        delete obj["cover"];
         setData(obj);
       } catch (e) {
         console.error("Yükleme hatası:", e);
@@ -212,6 +217,44 @@ export default function TurkiyeGeziyorum() {
       setLoading(false);
     })();
   }, []);
+
+  function handleCoverPick(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setCoverUploading(true);
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const photoData = reader.result;
+      try {
+        const { data: existing } = await supabase.from("provinces").select("id").eq("code", "cover").maybeSingle();
+        let error;
+        if (existing) {
+          ({ error } = await supabase.from("provinces").update({ data: { photo: photoData } }).eq("code", "cover"));
+        } else {
+          ({ error } = await supabase.from("provinces").insert({ code: "cover", data: { photo: photoData } }));
+        }
+        if (error) throw error;
+        setCoverPhoto(photoData);
+      } catch (err) {
+        console.error("Kapak fotoğrafı kaydedilemedi:", err);
+      }
+      setCoverUploading(false);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  }
+
+  async function removeCover() {
+    setCoverUploading(true);
+    try {
+      const { error } = await supabase.from("provinces").update({ data: { photo: null } }).eq("code", "cover");
+      if (error) throw error;
+      setCoverPhoto(null);
+    } catch (err) {
+      console.error("Kapak fotoğrafı silinemedi:", err);
+    }
+    setCoverUploading(false);
+  }
 
   const visitedCount = Object.values(data).filter((d) => d?.visited).length;
 
@@ -302,6 +345,43 @@ export default function TurkiyeGeziyorum() {
 
   return (
     <div className="min-h-screen bg-[#10152A] text-[#EDE6D6]" style={{ fontFamily: "'Segoe UI', ui-sans-serif, system-ui" }}>
+      {/* Cover photo */}
+      <div className="relative w-full h-40 sm:h-56 bg-[#151B33] overflow-hidden">
+        {coverPhoto && (
+          <img src={coverPhoto} alt="Kapak fotoğrafı" className="w-full h-full object-cover" />
+        )}
+        <div
+          className="absolute inset-0"
+          style={{
+            background: coverPhoto
+              ? "linear-gradient(180deg, rgba(16,21,42,0.15) 0%, rgba(16,21,42,0.85) 100%)"
+              : "transparent",
+          }}
+        />
+        {isAdmin && (
+          <div className="absolute top-3 right-3 flex gap-2">
+            <input ref={coverInputRef} type="file" accept="image/*" onChange={handleCoverPick} className="hidden" />
+            <button
+              onClick={() => coverInputRef.current?.click()}
+              disabled={coverUploading}
+              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full bg-black/50 backdrop-blur border border-white/20 text-[#EDE6D6] hover:bg-black/70 transition-colors disabled:opacity-60"
+            >
+              <Camera size={13} />
+              {coverUploading ? "Yükleniyor..." : coverPhoto ? "Kapak fotoğrafını değiştir" : "Kapak fotoğrafı ekle"}
+            </button>
+            {coverPhoto && (
+              <button
+                onClick={removeCover}
+                disabled={coverUploading}
+                className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-full bg-black/50 backdrop-blur border border-white/20 text-[#EDE6D6] hover:bg-black/70 transition-colors disabled:opacity-60"
+              >
+                <Trash2 size={13} />
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
       {/* Header */}
       <div className="border-b border-[#2A3358] bg-[#151B33] px-5 py-6">
         <div className="flex items-start justify-between gap-3 max-w-3xl mx-auto">
@@ -330,6 +410,7 @@ export default function TurkiyeGeziyorum() {
               {isAdmin ? "Düzenleniyor" : "Giriş"}
             </button>
           </div>
+
         </div>
 
         {/* Progress */}
