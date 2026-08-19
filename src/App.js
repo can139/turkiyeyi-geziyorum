@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { createClient } from "@supabase/supabase-js";
 import * as d3 from "d3";
-import { MapPin, Check, Lock, Unlock, Calendar, Video, X, StampIcon, Camera, Trash2, Map as MapIcon, LayoutGrid, Share2 } from "lucide-react";
+import html2canvas from "html2canvas";
+import { MapPin, Check, Lock, Unlock, Calendar, Video, X, StampIcon, Camera, Trash2, Map as MapIcon, LayoutGrid, Share2, Sparkles } from "lucide-react";
 
 const GEOJSON_URL = "https://raw.githubusercontent.com/cihadturhan/tr-geojson/master/geo/tr-cities-utf8.json";
 
@@ -97,7 +98,7 @@ const REGIONS = ["Tümü", "Marmara", "Ege", "Akdeniz", "İç Anadolu", "Karaden
 
 const ADMIN_PASSWORD = "Nisan2304";
 
-function TurkeyMap({ data, onSelectProvince }) {
+function TurkeyMap({ data, onSelectProvince, mapRef }) {
   const [geo, setGeo] = useState(null);
   const [geoError, setGeoError] = useState(false);
 
@@ -133,7 +134,7 @@ function TurkeyMap({ data, onSelectProvince }) {
   }
 
   return (
-    <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto select-none">
+    <svg ref={mapRef} viewBox={`0 0 ${width} ${height}`} className="w-full h-auto select-none">
       {geo.features.map((f) => {
         const code = String(f.id).padStart(2, "0");
         const province = PROVINCES.find((p) => p.code === code);
@@ -186,6 +187,7 @@ export default function TurkiyeGeziyorum() {
   const [activeRegion, setActiveRegion] = useState("Tümü");
   const [viewMode, setViewMode] = useState("grid");
   const [shareCopied, setShareCopied] = useState(false);
+  const [generatingStory, setGeneratingStory] = useState(false);
   const [selected, setSelected] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
@@ -197,6 +199,8 @@ export default function TurkiyeGeziyorum() {
   const [coverUploading, setCoverUploading] = useState(false);
   const fileInputRef = useRef(null);
   const coverInputRef = useRef(null);
+  const mapSvgRef = useRef(null);
+  const storyCardRef = useRef(null);
 
   useEffect(() => {
     (async () => {
@@ -257,6 +261,11 @@ export default function TurkiyeGeziyorum() {
   }
 
   const visitedCount = Object.values(data).filter((d) => d?.visited).length;
+  const progress = Math.round((visitedCount / 81) * 100);
+
+  const visitedProvinces = useMemo(() => {
+    return PROVINCES.filter((p) => data[p.code]?.visited);
+  }, [data]);
 
   async function handleShare() {
     const shareText = `Türkiye'yi Geziyorum · ${visitedCount}/81 il tamamladım! 🇹🇷`;
@@ -265,7 +274,7 @@ export default function TurkiyeGeziyorum() {
       try {
         await navigator.share({ title: "Türkiye'yi Geziyorum", text: shareText, url: shareUrl });
       } catch (e) {
-        // kullanıcı paylaşımı iptal etmiş olabilir, sorun değil
+        // İptal durumu
       }
     } else {
       try {
@@ -277,7 +286,68 @@ export default function TurkiyeGeziyorum() {
       }
     }
   }
-  const progress = Math.round((visitedCount / 81) * 100);
+
+  async function handleDownloadStory() {
+    if (!storyCardRef.current) return;
+    setGeneratingStory(true);
+
+    try {
+      // Harita SVG'sinin kopyasını story konteynerine yerleştir
+      const storyMapContainer = document.getElementById("story-svg-target");
+      if (storyMapContainer) {
+        storyMapContainer.innerHTML = "";
+        if (mapSvgRef.current) {
+          const clone = mapSvgRef.current.cloneNode(true);
+          clone.style.width = "100%";
+          clone.style.height = "auto";
+          storyMapContainer.appendChild(clone);
+        }
+      }
+
+      storyCardRef.current.style.display = "flex";
+
+      const canvas = await html2canvas(storyCardRef.current, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: "#10152A",
+      });
+
+      storyCardRef.current.style.display = "none";
+
+      canvas.toBlob(async (blob) => {
+        if (!blob) {
+          setGeneratingStory(false);
+          return;
+        }
+
+        const file = new File([blob], "turkiyeyi-geziyorum-hikaye.png", { type: "image/png" });
+
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          try {
+            await navigator.share({
+              files: [file],
+              title: "Türkiye'yi Geziyorum",
+              text: `Türkiye'nin %${progress}'ini gezdim! 📍`,
+            });
+            setGeneratingStory(false);
+            return;
+          } catch (e) {
+            // Paylaşım iptal edilirse indirmeye geç
+          }
+        }
+
+        const link = document.createElement("a");
+        link.download = "turkiyeyi-geziyorum-hikaye.png";
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+        setGeneratingStory(false);
+      });
+    } catch (err) {
+      console.error("Hikaye oluşturma hatası:", err);
+      if (storyCardRef.current) storyCardRef.current.style.display = "none";
+      setGeneratingStory(false);
+    }
+  }
 
   const filtered = PROVINCES.filter((p) => activeRegion === "Tümü" || p.region === activeRegion);
 
@@ -345,6 +415,78 @@ export default function TurkiyeGeziyorum() {
 
   return (
     <div className="min-h-screen bg-[#10152A] text-[#EDE6D6]" style={{ fontFamily: "'Segoe UI', ui-sans-serif, system-ui" }}>
+      {/* Gizli Story Şablonu */}
+      <div
+        ref={storyCardRef}
+        style={{
+          display: "none",
+          position: "fixed",
+          left: "-9999px",
+          width: "540px",
+          height: "960px",
+          backgroundColor: "#10152A",
+          backgroundImage: "radial-gradient(circle at 50% 10%, #1c2444 0%, #10152A 100%)",
+          color: "#EDE6D6",
+          padding: "45px 35px",
+          boxSizing: "border-box",
+          flexDirection: "column",
+          justifyContent: "space-between",
+        }}
+      >
+        <div style={{ textAlign: "center" }}>
+          <p style={{ fontSize: "13px", letterSpacing: "3px", color: "#D9A544", textTransform: "uppercase", margin: 0, fontWeight: 700 }}>
+            TÜRKİYE'Yİ GEZİYORUM
+          </p>
+          <h1 style={{ fontSize: "28px", margin: "8px 0 0 0", fontFamily: "Georgia, serif", color: "#FFF" }}>
+            Seyahat Günlüğüm
+          </h1>
+        </div>
+
+        <div
+          id="story-svg-target"
+          style={{
+            width: "100%",
+            height: "280px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "rgba(255,255,255,0.02)",
+            border: "1px solid rgba(217,165,68,0.2)",
+            borderRadius: "20px",
+            padding: "15px",
+            boxSizing: "border-box",
+          }}
+        />
+
+        <div style={{ display: "flex", gap: "12px" }}>
+          <div style={{ flex: 1, background: "#161C36", padding: "18px", borderRadius: "18px", border: "1px solid #2A3358", textAlign: "center" }}>
+            <span style={{ fontSize: "12px", color: "#8B93B0", display: "block", marginBottom: "4px" }}>Gezilen Şehir</span>
+            <span style={{ fontSize: "32px", fontWeight: "bold", color: "#D9A544", fontFamily: "Georgia, serif" }}>{visitedCount} / 81</span>
+          </div>
+          <div style={{ flex: 1, background: "#161C36", padding: "18px", borderRadius: "18px", border: "1px solid #2A3358", textAlign: "center" }}>
+            <span style={{ fontSize: "12px", color: "#8B93B0", display: "block", marginBottom: "4px" }}>Tamamlanan</span>
+            <span style={{ fontSize: "32px", fontWeight: "bold", color: "#E8C275", fontFamily: "Georgia, serif" }}>%{progress}</span>
+          </div>
+        </div>
+
+        <div style={{ background: "#161C36", borderRadius: "18px", padding: "16px 20px", border: "1px solid #2A3358" }}>
+          <p style={{ margin: "0 0 6px 0", fontSize: "11px", color: "#8B93B0", textTransform: "uppercase", letterSpacing: "1px" }}>Son Ziyaret Edilen İller</p>
+          <p style={{ margin: 0, fontSize: "15px", fontWeight: 600, color: "#EDE6D6" }}>
+            {visitedProvinces.length > 0 ? visitedProvinces.slice(-4).map((p) => p.name).join(" • ") : "Henüz şehir eklenmedi"}
+          </p>
+        </div>
+
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid #2A3358", paddingTop: "18px" }}>
+          <span style={{ fontSize: "12px", color: "#6B7299" }}>turkiyeyi-geziyorum-mu.vercel.app</span>
+          <span style={{ fontSize: "12px", color: "#D9A544", fontWeight: 600 }}>📍 81 İl Yolculuğu</span>
+        </div>
+      </div>
+
+      {/* Arka Plan Harita Yükleyici (Story için gizli bileşen) */}
+      <div className="hidden">
+        <TurkeyMap data={data} onSelectProvince={() => {}} mapRef={mapSvgRef} />
+      </div>
+
       {/* Cover photo */}
       <div className="relative w-full h-40 sm:h-56 bg-[#151B33] overflow-hidden">
         {coverPhoto && (
@@ -396,6 +538,14 @@ export default function TurkiyeGeziyorum() {
           </div>
           <div className="shrink-0 flex items-center gap-2">
             <button
+              onClick={handleDownloadStory}
+              disabled={generatingStory}
+              className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-full border border-[#D9A544]/60 bg-[#D9A544]/10 text-[#E8C275] hover:bg-[#D9A544]/20 transition-colors disabled:opacity-50"
+            >
+              <Sparkles size={14} />
+              {generatingStory ? "Hazırlanıyor..." : "Hikaye Kartı"}
+            </button>
+            <button
               onClick={handleShare}
               className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-full border border-[#2A3358] bg-[#1C2440] hover:bg-[#232C4D] transition-colors"
             >
@@ -410,7 +560,6 @@ export default function TurkiyeGeziyorum() {
               {isAdmin ? "Düzenleniyor" : "Giriş"}
             </button>
           </div>
-
         </div>
 
         {/* Progress */}
@@ -475,47 +624,47 @@ export default function TurkiyeGeziyorum() {
 
       {/* Grid */}
       {viewMode === "grid" && (
-      <div className="max-w-3xl mx-auto px-5 py-5">
-        {loading ? (
-          <p className="text-[#8B93B0] text-sm py-10 text-center">Yükleniyor...</p>
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {filtered.map((p) => {
-              const entry = data[p.code];
-              const v = entry?.visited;
-              const thumb = entry?.photos && entry.photos.length > 0 ? entry.photos[0] : null;
-              return (
-                <button
-                  key={p.code}
-                  onClick={() => openProvince(p)}
-                  className={`relative text-left rounded-xl border overflow-hidden transition-all ${
-                    v
-                      ? "bg-[#1E2545] border-[#D9A544]/40"
-                      : "bg-[#161C36] border-[#2A3358] hover:border-[#4A5590]"
-                  }`}
-                >
-                  {thumb && (
-                    <img src={thumb} alt={p.name} className="w-full h-20 object-cover" />
-                  )}
-                  <div className="flex items-start justify-between p-3.5">
-                    <div>
-                      <div className="text-[10px] text-[#6B7299] tracking-widest">{p.code}</div>
-                      <div className="text-sm font-medium mt-0.5 leading-tight">{p.name}</div>
-                    </div>
-                    {v && (
-                      <div
-                        className="shrink-0 w-8 h-8 rounded-full border-2 border-[#D9A544] flex items-center justify-center -rotate-12 opacity-90"
-                      >
-                        <Check size={14} className="text-[#E8C275]" strokeWidth={3} />
-                      </div>
+        <div className="max-w-3xl mx-auto px-5 py-5">
+          {loading ? (
+            <p className="text-[#8B93B0] text-sm py-10 text-center">Yükleniyor...</p>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {filtered.map((p) => {
+                const entry = data[p.code];
+                const v = entry?.visited;
+                const thumb = entry?.photos && entry.photos.length > 0 ? entry.photos[0] : null;
+                return (
+                  <button
+                    key={p.code}
+                    onClick={() => openProvince(p)}
+                    className={`relative text-left rounded-xl border overflow-hidden transition-all ${
+                      v
+                        ? "bg-[#1E2545] border-[#D9A544]/40"
+                        : "bg-[#161C36] border-[#2A3358] hover:border-[#4A5590]"
+                    }`}
+                  >
+                    {thumb && (
+                      <img src={thumb} alt={p.name} className="w-full h-20 object-cover" />
                     )}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        )}
-      </div>
+                    <div className="flex items-start justify-between p-3.5">
+                      <div>
+                        <div className="text-[10px] text-[#6B7299] tracking-widest">{p.code}</div>
+                        <div className="text-sm font-medium mt-0.5 leading-tight">{p.name}</div>
+                      </div>
+                      {v && (
+                        <div
+                          className="shrink-0 w-8 h-8 rounded-full border-2 border-[#D9A544] flex items-center justify-center -rotate-12 opacity-90"
+                        >
+                          <Check size={14} className="text-[#E8C275]" strokeWidth={3} />
+                        </div>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
       )}
 
       {/* Login popover */}
@@ -575,7 +724,6 @@ export default function TurkiyeGeziyorum() {
             </div>
 
             {!isAdmin ? (
-              // Read-only public view
               <div className="mt-4 space-y-3">
                 {draft.visited ? (
                   <>
@@ -611,7 +759,6 @@ export default function TurkiyeGeziyorum() {
                 )}
               </div>
             ) : (
-              // Admin edit form
               <div className="mt-4 space-y-4">
                 <label className="flex items-center gap-2 text-sm cursor-pointer">
                   <input
