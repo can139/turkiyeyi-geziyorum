@@ -98,6 +98,41 @@ const REGIONS = ["Tümü", "Marmara", "Ege", "Akdeniz", "İç Anadolu", "Karaden
 
 const ADMIN_PASSWORD = "Nisan2304";
 
+// Türkçe karakterleri normalize edip isimleri kıyaslanabilir hale getirir
+function normalizeTrName(str) {
+  if (!str) return "";
+  return str
+    .toLocaleLowerCase("tr")
+    .replace(/ı/g, "i")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]/g, "")
+    .trim();
+}
+
+// Bazı kaynaklarda farklı yazılan/eski il isimleri için eşanlamlılar
+const NAME_ALIASES = {
+  icel: "33", // Mersin'in eski adı
+  afyon: "03",
+  kmaras: "46",
+  maras: "46",
+  urfa: "63",
+};
+
+const PROVINCE_BY_NORMALIZED_NAME = {};
+PROVINCES.forEach((p) => {
+  PROVINCE_BY_NORMALIZED_NAME[normalizeTrName(p.name)] = p;
+});
+
+function matchProvinceByName(rawName) {
+  const key = normalizeTrName(rawName);
+  if (PROVINCE_BY_NORMALIZED_NAME[key]) return PROVINCE_BY_NORMALIZED_NAME[key];
+  if (NAME_ALIASES[key]) {
+    return PROVINCES.find((p) => p.code === NAME_ALIASES[key]);
+  }
+  return null;
+}
+
 function TurkeyMap({ data, onSelectProvince, mapRef }) {
   const [geo, setGeo] = useState(null);
   const [geoError, setGeoError] = useState(false);
@@ -135,33 +170,34 @@ function TurkeyMap({ data, onSelectProvince, mapRef }) {
 
   return (
     <svg ref={mapRef} viewBox={`0 0 ${width} ${height}`} className="w-full h-auto select-none">
-      {geo.features.map((f) => {
-        const code = String(f.id).padStart(2, "0");
-        const province = PROVINCES.find((p) => p.code === code);
-        const visited = data[code]?.visited;
+      {geo.features.map((f, i) => {
+        const rawName = f.properties?.name || f.properties?.NAME || f.properties?.il || "";
+        const province = matchProvinceByName(rawName);
+        const code = province?.code;
+        const visited = code ? data[code]?.visited : false;
         return (
           <path
-            key={code}
+            key={code || `feature-${i}`}
             d={pathGen(f)}
             fill={visited ? "#D9A544" : "#232C4D"}
             stroke="#10152A"
             strokeWidth={0.6}
-            className="cursor-pointer transition-colors hover:opacity-80"
+            className={province ? "cursor-pointer transition-colors hover:opacity-80" : ""}
             onClick={() => province && onSelectProvince(province)}
           >
-            <title>{province ? `${province.code} · ${province.name}` : ""}</title>
+            <title>{province ? `${province.code} · ${province.name}` : rawName}</title>
           </path>
         );
       })}
-      {geo.features.map((f) => {
-        const code = String(f.id).padStart(2, "0");
-        const province = PROVINCES.find((p) => p.code === code);
+      {geo.features.map((f, i) => {
+        const rawName = f.properties?.name || f.properties?.NAME || f.properties?.il || "";
+        const province = matchProvinceByName(rawName);
         if (!province) return null;
-        const visited = data[code]?.visited;
+        const visited = data[province.code]?.visited;
         const [cx, cy] = pathGen.centroid(f);
         return (
           <text
-            key={`label-${code}`}
+            key={`label-${province.code}-${i}`}
             x={cx}
             y={cy}
             textAnchor="middle"
