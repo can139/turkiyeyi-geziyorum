@@ -561,7 +561,7 @@ export default function TurkiyeGeziyorum() {
 
       {/* Header */}
       <div className="border-b border-[#2A3358] bg-[#151B33] px-5 py-6">
-        <div className="flex items-start justify-between gap-3 max-w-3xl mx-auto">
+        <div className="max-w-3xl mx-auto flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
           <div>
             <h1
               className="text-2xl sm:text-3xl tracking-tight"
@@ -571,25 +571,25 @@ export default function TurkiyeGeziyorum() {
             </h1>
             <p className="text-sm text-[#8B93B0] mt-1">81 ilde bir yolculuğun günlüğü</p>
           </div>
-          <div className="shrink-0 flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={handleDownloadStory}
               disabled={generatingStory}
-              className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-full border border-[#D9A544]/60 bg-[#D9A544]/10 text-[#E8C275] hover:bg-[#D9A544]/20 transition-colors disabled:opacity-50"
+              className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-full border border-[#D9A544]/60 bg-[#D9A544]/10 text-[#E8C275] hover:bg-[#D9A544]/20 transition-colors disabled:opacity-50 whitespace-nowrap"
             >
               <Sparkles size={14} />
               {generatingStory ? "Hazırlanıyor..." : "Hikaye Kartı"}
             </button>
             <button
               onClick={handleShare}
-              className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-full border border-[#2A3358] bg-[#1C2440] hover:bg-[#232C4D] transition-colors"
+              className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-full border border-[#2A3358] bg-[#1C2440] hover:bg-[#232C4D] transition-colors whitespace-nowrap"
             >
               <Share2 size={14} />
               {shareCopied ? "Kopyalandı!" : "Paylaş"}
             </button>
             <button
               onClick={() => (isAdmin ? setIsAdmin(false) : setShowLogin(true))}
-              className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-full border border-[#2A3358] bg-[#1C2440] hover:bg-[#232C4D] transition-colors"
+              className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-full border border-[#2A3358] bg-[#1C2440] hover:bg-[#232C4D] transition-colors whitespace-nowrap"
             >
               {isAdmin ? <Unlock size={14} className="text-[#D9A544]" /> : <Lock size={14} />}
               {isAdmin ? "Düzenleniyor" : "Giriş"}
