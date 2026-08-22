@@ -96,6 +96,91 @@ const PROVINCES = [
 
 const REGIONS = ["Tümü", "Marmara", "Ege", "Akdeniz", "İç Anadolu", "Karadeniz", "Doğu Anadolu", "Güneydoğu Anadolu"];
 
+// Her il için kısa, genel bilgi düzeyinde 2-3 öneri
+const ATTRACTIONS = {
+  "01": ["Sabancı Merkez Camii", "Taşköprü (Roma köprüsü)", "Adana mutfağı - kebap"],
+  "02": ["Nemrut Dağı", "Perre Antik Kenti", "Adıyaman Kalesi"],
+  "03": ["Frig Vadisi", "Sandıklı termal kaplıcaları", "Ulu Cami"],
+  "04": ["Ağrı Dağı (Ararat)", "İshak Paşa Sarayı", "Doğubayazıt"],
+  "05": ["Amasya kaya mezarları", "Osmanlı evleri", "Yeşilırmak kıyısı"],
+  "06": ["Anıtkabir", "Ankara Kalesi", "Anadolu Medeniyetleri Müzesi"],
+  "07": ["Antalya Kaleiçi", "Düden Şelalesi", "Aspendos Antik Tiyatrosu"],
+  "08": ["Karagöl", "Şavşat", "Yeşil vadiler ve yaylalar"],
+  "09": ["Aydın - Efes'e yakın", "Dilek Yarımadası Milli Parkı", "Söke ovası"],
+  "10": ["Kuşcenneti Milli Parkı", "Sarıköy sahili", "Cunda benzeri koylar"],
+  "11": ["Bilecik - Şeyh Edebali Türbesi", "Osmaneli tarihi evleri", ""],
+  "12": ["Bingöl yaylaları", "Sıcak su kaynakları", ""],
+  "13": ["Van Gölü kıyısı (Bitlis tarafı)", "Nemrut Krater Gölü", "Ahlat mezarlığı"],
+  "14": ["Abant Gölü", "Bolu Dağı", "Yedigöller Milli Parkı"],
+  "15": ["Salda Gölü", "İnsuyu Mağarası", ""],
+  "16": ["Ulu Cami", "Cumalıkızık köyü", "Uludağ"],
+  "17": ["Gelibolu Yarımadası", "Truva Antik Kenti", "Assos"],
+  "18": ["Çankırı tuz mağaraları", "Ilgaz Dağı Milli Parkı", ""],
+  "19": ["Hitit başkenti Hattuşa", "Çorum kalesi", ""],
+  "20": ["Pamukkale travertenleri", "Hierapolis Antik Kenti", ""],
+  "21": ["Diyarbakır Surları", "On Gözlü Köprü", "Hevsel Bahçeleri"],
+  "22": ["Selimiye Camii", "Edirne Sarayı kalıntıları", "Sarayiçi"],
+  "23": ["Hazar Gölü", "Elazığ kalesi", ""],
+  "24": ["Erzincan - Karasu Kanyonu", "Üzümlü mağara evleri", ""],
+  "25": ["Palandöken", "Çifte Minareli Medrese", "Erzurum Kalesi"],
+  "26": ["Odunpazarı tarihi evleri", "Eskişehir Porsuk Çayı", ""],
+  "27": ["Zeugma Mozaik Müzesi", "Gaziantep kalesi", "Baklava kültürü"],
+  "28": ["Giresun Adası", "Kümbet Yaylası", ""],
+  "29": ["Gümüşhane - Süleymaniye köyü", "Karaca Mağarası", ""],
+  "30": ["Hakkari dağları", "Cilo Dağları", ""],
+  "31": ["Antakya (Hatay) mozaikleri", "St. Pierre Kilisesi", "Hatay mutfağı"],
+  "32": ["Eğirdir Gölü", "Isparta gül bahçeleri", ""],
+  "33": ["Mersin Kızkalesi", "Tarsus şelalesi", "Cennet-Cehennem Mağaraları"],
+  "34": ["Ayasofya", "Topkapı Sarayı", "Boğaziçi"],
+  "35": ["Kadifekale", "Saat Kulesi (Konak)", "İzmir Kordon"],
+  "36": ["Ani Ören Yeri", "Kars kalesi", "Kars kaşarı"],
+  "37": ["Kastamonu evleri", "İnebolu sahili", ""],
+  "38": ["Erciyes Dağı", "Kayseri kalesi", ""],
+  "39": ["Kırklareli - Dupnisa Mağarası", "Longoz ormanları", ""],
+  "40": ["Kırşehir Cacabey Camii", "Terme kaplıcaları", ""],
+  "41": ["Kocaeli - Sapanca'ya yakın", "Kartepe", ""],
+  "42": ["Mevlana Müzesi", "Sema gösterisi", "Çatalhöyük"],
+  "43": ["Kütahya çinileri", "Frig Vadisi'ne yakın", ""],
+  "44": ["Malatya - kayısı bahçeleri", "Arslantepe Höyüğü", ""],
+  "45": ["Manisa - Spil Dağı", "Sardes antik kenti", ""],
+  "46": ["Kahramanmaraş dondurması", "Yedikuyular tabiat parkı", ""],
+  "47": ["Mardin taş evleri", "Deyrülzafaran Manastırı", "Midyat"],
+  "48": ["Ölüdeniz", "Bodrum Kalesi", "Muğla köyleri"],
+  "49": ["Muş ovası", "Malazgirt", ""],
+  "50": ["Kapadokya - Göreme", "Peri bacaları", "Balon turları"],
+  "51": ["Niğde kalesi", "Aladağlar Milli Parkı", ""],
+  "52": ["Ordu - Boztepe", "Fındık bahçeleri", ""],
+  "53": ["Rize çay bahçeleri", "Ayder Yaylası", ""],
+  "54": ["Sakarya - Sapanca Gölü", "Maşukiye", ""],
+  "55": ["Samsun Bandırma Vapuru", "Amazon Köyü", ""],
+  "56": ["Siirt - Botan Vadisi", "Aydınlar ilçesi", ""],
+  "57": ["Sinop kalesi ve cezaevi", "İnceburun", ""],
+  "58": ["Sivas Divriği Ulu Cami", "Kangal balıklı kaplıca", ""],
+  "59": ["Rüstem Paşa Camii", "Şarköy-Mürefte bağları", "Uçmakdere"],
+  "60": ["Tokat - Ballıca Mağarası", "Osmanlı evleri", ""],
+  "61": ["Sümela Manastırı", "Uzungöl", "Trabzon sahili"],
+  "62": ["Munzur Vadisi Milli Parkı", "Tunceli dağları", ""],
+  "63": ["Balıklıgöl", "Göbeklitepe", "Şanlıurfa çarşısı"],
+  "64": ["Uşak - Ulubey Kanyonları", "", ""],
+  "65": ["Van Gölü", "Akdamar Adası", "Van Kalesi"],
+  "66": ["Yozgat - Çamlık Milli Parkı", "", ""],
+  "67": ["Zonguldak - Gökgöl Mağarası", "Karadeniz sahili", ""],
+  "68": ["Aksaray - Ihlara Vadisi", "Hasan Dağı", ""],
+  "69": ["Bayburt kalesi", "Kop Dağı", ""],
+  "70": ["Karaman - Karadağ", "Binbir Kilise", ""],
+  "71": ["Kırıkkale - Delice kanyonları", "", ""],
+  "72": ["Batman - Hasankeyf'e yakın", "", ""],
+  "73": ["Şırnak - Cudi Dağı", "Nuh'un Gemisi rivayeti", ""],
+  "74": ["Bartın tarihi evleri", "Amasra", ""],
+  "75": ["Ardahan - Cıldır Gölü", "Çıldır buz pateni", ""],
+  "76": ["Iğdır ovası", "Ağrı Dağı manzarası", ""],
+  "77": ["Yalova termal kaplıcaları", "Yalova çınarı", ""],
+  "78": ["Karabük - Safranbolu evleri", "Yenice ormanları", ""],
+  "79": ["Kilis - Ravanda Kalesi", "", ""],
+  "80": ["Osmaniye - Karatepe-Aslantaş", "", ""],
+  "81": ["Düzce - Efteni Gölü", "Yığılca yaylaları", ""],
+};
+
 const ADMIN_PASSWORD = "Nisan2304";
 
 // Türkçe karakterleri normalize edip isimleri kıyaslanabilir hale getirir
@@ -168,6 +253,21 @@ function TurkeyMap({ data, onSelectProvince, mapRef }) {
     return <p className="text-[#8B93B0] text-sm py-10 text-center">Harita yükleniyor...</p>;
   }
 
+  // Ziyaret tarihine göre sıralı rota noktalarını hesapla
+  const routePoints = (() => {
+    const visitedWithDate = PROVINCES.filter((p) => data[p.code]?.visited && data[p.code]?.date).sort(
+      (a, b) => new Date(data[a.code].date) - new Date(data[b.code].date)
+    );
+    if (visitedWithDate.length < 2) return [];
+    const pointsByCode = {};
+    geo.features.forEach((f) => {
+      const rawName = f.properties?.name || f.properties?.NAME || f.properties?.il || "";
+      const province = matchProvinceByName(rawName);
+      if (province) pointsByCode[province.code] = pathGen.centroid(f);
+    });
+    return visitedWithDate.map((p) => pointsByCode[p.code]).filter(Boolean);
+  })();
+
   return (
     <svg ref={mapRef} viewBox={`0 0 ${width} ${height}`} className="w-full h-auto select-none">
       {geo.features.map((f, i) => {
@@ -189,6 +289,26 @@ function TurkeyMap({ data, onSelectProvince, mapRef }) {
           </path>
         );
       })}
+
+      {/* Ziyaret sırasına göre rota çizgisi */}
+      {routePoints.length > 1 && (
+        <>
+          <polyline
+            points={routePoints.map(([x, y]) => `${x},${y}`).join(" ")}
+            fill="none"
+            stroke="#E8C275"
+            strokeWidth={1.1}
+            strokeDasharray="2.5 2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            opacity={0.85}
+          />
+          {routePoints.map(([x, y], i) => (
+            <circle key={`stop-${i}`} cx={x} cy={y} r={1.6} fill="#E8C275" stroke="#10152A" strokeWidth={0.4} />
+          ))}
+        </>
+      )}
+
       {geo.features.map((f, i) => {
         const rawName = f.properties?.name || f.properties?.NAME || f.properties?.il || "";
         const province = matchProvinceByName(rawName);
@@ -225,6 +345,8 @@ export default function TurkiyeGeziyorum() {
   const [shareCopied, setShareCopied] = useState(false);
   const [generatingStory, setGeneratingStory] = useState(false);
   const [selected, setSelected] = useState(null);
+  const [weather, setWeather] = useState(null);
+  const [weatherLoading, setWeatherLoading] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [pwInput, setPwInput] = useState("");
@@ -390,6 +512,42 @@ export default function TurkiyeGeziyorum() {
     const existing = data[p.code] || { visited: false, date: "", note: "", video: "", photos: [] };
     setDraft({ photos: [], ...existing });
     setSelected(p);
+    fetchWeather(p.name);
+  }
+
+  async function fetchWeather(provinceName) {
+    setWeather(null);
+    setWeatherLoading(true);
+    try {
+      const geoRes = await fetch(
+        `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(provinceName)}&count=1&language=tr&country=TR`
+      );
+      const geoData = await geoRes.json();
+      const loc = geoData?.results?.[0];
+      if (!loc) throw new Error("Konum bulunamadı");
+      const wRes = await fetch(
+        `https://api.open-meteo.com/v1/forecast?latitude=${loc.latitude}&longitude=${loc.longitude}&current=temperature_2m,weather_code&timezone=auto`
+      );
+      const wData = await wRes.json();
+      setWeather({
+        temp: Math.round(wData?.current?.temperature_2m),
+        code: wData?.current?.weather_code,
+      });
+    } catch (e) {
+      setWeather(null);
+    }
+    setWeatherLoading(false);
+  }
+
+  function weatherDescription(code) {
+    if (code === 0) return { text: "Açık", emoji: "☀️" };
+    if ([1, 2, 3].includes(code)) return { text: "Parçalı bulutlu", emoji: "⛅" };
+    if ([45, 48].includes(code)) return { text: "Sisli", emoji: "🌫️" };
+    if ([51, 53, 55, 56, 57].includes(code)) return { text: "Çisenti", emoji: "🌦️" };
+    if ([61, 63, 65, 66, 67, 80, 81, 82].includes(code)) return { text: "Yağmurlu", emoji: "🌧️" };
+    if ([71, 73, 75, 77, 85, 86].includes(code)) return { text: "Karlı", emoji: "❄️" };
+    if ([95, 96, 99].includes(code)) return { text: "Fırtınalı", emoji: "⛈️" };
+    return { text: "", emoji: "🌤️" };
   }
 
   function handlePhotoUpload(e) {
@@ -757,6 +915,33 @@ export default function TurkiyeGeziyorum() {
                 <X size={20} />
               </button>
             </div>
+
+            {/* Hava durumu */}
+            <div className="mt-3 flex items-center gap-2 text-sm">
+              {weatherLoading ? (
+                <span className="text-[#6B7299] text-xs">Hava durumu yükleniyor...</span>
+              ) : weather ? (
+                <span className="inline-flex items-center gap-1.5 text-[#C9CEE3]">
+                  <span>{weatherDescription(weather.code).emoji}</span>
+                  <span className="font-medium">{weather.temp}°C</span>
+                  <span className="text-[#8B93B0] text-xs">{weatherDescription(weather.code).text}</span>
+                </span>
+              ) : null}
+            </div>
+
+            {/* Yer önerileri */}
+            {ATTRACTIONS[selected.code]?.filter(Boolean).length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                {ATTRACTIONS[selected.code].filter(Boolean).map((place, i) => (
+                  <span
+                    key={i}
+                    className="text-[11px] px-2.5 py-1 rounded-full bg-[#1C2440] border border-[#2A3358] text-[#8AB4E8]"
+                  >
+                    📍 {place}
+                  </span>
+                ))}
+              </div>
+            )}
 
             {!isAdmin ? (
               <div className="mt-4 space-y-3">
