@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { createClient } from "@supabase/supabase-js";
 import * as d3 from "d3";
 import html2canvas from "html2canvas";
-import { MapPin, Check, Lock, Unlock, Calendar, Video, X, StampIcon, Camera, Trash2, Map as MapIcon, LayoutGrid, Share2, Sparkles } from "lucide-react";
+import { MapPin, Check, Lock, Unlock, Calendar, Video, X, StampIcon, Camera, Trash2, Map as MapIcon, LayoutGrid, Share2, Sparkles, Search } from "lucide-react";
 
 const GEOJSON_URL = "https://raw.githubusercontent.com/cihadturhan/tr-geojson/master/geo/tr-cities-utf8.json";
 
@@ -342,6 +342,7 @@ export default function TurkiyeGeziyorum() {
   const [data, setData] = useState({});
   const [loading, setLoading] = useState(true);
   const [activeRegion, setActiveRegion] = useState("Tümü");
+  const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState("grid");
   const [shareCopied, setShareCopied] = useState(false);
   const [generatingStory, setGeneratingStory] = useState(false);
@@ -507,7 +508,11 @@ export default function TurkiyeGeziyorum() {
     }
   }
 
-  const filtered = PROVINCES.filter((p) => activeRegion === "Tümü" || p.region === activeRegion);
+  const filtered = PROVINCES.filter(
+    (p) =>
+      (activeRegion === "Tümü" || p.region === activeRegion) &&
+      normalizeTrName(p.name).includes(normalizeTrName(searchQuery))
+  );
 
   function openProvince(p) {
     const existing = data[p.code] || { visited: false, planned: false, date: "", note: "", video: "", photos: [] };
@@ -774,38 +779,52 @@ export default function TurkiyeGeziyorum() {
       </div>
 
       {/* View toggle */}
-      <div className="max-w-3xl mx-auto px-5 pt-5 flex items-center justify-between gap-3">
-        <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1">
-          {viewMode === "grid" &&
-            REGIONS.map((r) => (
-              <button
-                key={r}
-                onClick={() => setActiveRegion(r)}
-                className={`shrink-0 text-xs px-3.5 py-2 rounded-full border transition-colors ${
-                  activeRegion === r
-                    ? "bg-[#D9A544] text-[#10152A] border-[#D9A544] font-medium"
-                    : "border-[#2A3358] text-[#8B93B0] hover:border-[#4A5590]"
-                }`}
-              >
-                {r}
-              </button>
-            ))}
-        </div>
-        <div className="shrink-0 flex gap-1 border border-[#2A3358] rounded-full p-1">
-          <button
-            onClick={() => setViewMode("grid")}
-            className={`p-1.5 rounded-full transition-colors ${viewMode === "grid" ? "bg-[#D9A544] text-[#10152A]" : "text-[#8B93B0]"}`}
-            aria-label="Liste görünümü"
-          >
-            <LayoutGrid size={15} />
-          </button>
-          <button
-            onClick={() => setViewMode("map")}
-            className={`p-1.5 rounded-full transition-colors ${viewMode === "map" ? "bg-[#D9A544] text-[#10152A]" : "text-[#8B93B0]"}`}
-            aria-label="Harita görünümü"
-          >
-            <MapIcon size={15} />
-          </button>
+      <div className="max-w-3xl mx-auto px-5 pt-5">
+        {viewMode === "grid" && (
+          <div className="relative mb-3">
+            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6B7299]" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="İl ara..."
+              className="w-full bg-[#161C36] border border-[#2A3358] rounded-full pl-9 pr-3 py-2 text-sm outline-none focus:border-[#D9A544] placeholder:text-[#6B7299]"
+            />
+          </div>
+        )}
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1">
+            {viewMode === "grid" &&
+              REGIONS.map((r) => (
+                <button
+                  key={r}
+                  onClick={() => setActiveRegion(r)}
+                  className={`shrink-0 text-xs px-3.5 py-2 rounded-full border transition-colors ${
+                    activeRegion === r
+                      ? "bg-[#D9A544] text-[#10152A] border-[#D9A544] font-medium"
+                      : "border-[#2A3358] text-[#8B93B0] hover:border-[#4A5590]"
+                  }`}
+                >
+                  {r}
+                </button>
+              ))}
+          </div>
+          <div className="shrink-0 flex gap-1 border border-[#2A3358] rounded-full p-1">
+            <button
+              onClick={() => setViewMode("grid")}
+              className={`p-1.5 rounded-full transition-colors ${viewMode === "grid" ? "bg-[#D9A544] text-[#10152A]" : "text-[#8B93B0]"}`}
+              aria-label="Liste görünümü"
+            >
+              <LayoutGrid size={15} />
+            </button>
+            <button
+              onClick={() => setViewMode("map")}
+              className={`p-1.5 rounded-full transition-colors ${viewMode === "map" ? "bg-[#D9A544] text-[#10152A]" : "text-[#8B93B0]"}`}
+              aria-label="Harita görünümü"
+            >
+              <MapIcon size={15} />
+            </button>
+          </div>
         </div>
       </div>
 
