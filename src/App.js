@@ -275,11 +275,12 @@ function TurkeyMap({ data, onSelectProvince, mapRef }) {
         const province = matchProvinceByName(rawName);
         const code = province?.code;
         const visited = code ? data[code]?.visited : false;
+        const planned = code ? !visited && data[code]?.planned : false;
         return (
           <path
             key={code || `feature-${i}`}
             d={pathGen(f)}
-            fill={visited ? "#D9A544" : "#232C4D"}
+            fill={visited ? "#D9A544" : planned ? "#3A5A94" : "#232C4D"}
             stroke="#10152A"
             strokeWidth={0.6}
             className={province ? "cursor-pointer transition-colors hover:opacity-80" : ""}
@@ -351,7 +352,7 @@ export default function TurkiyeGeziyorum() {
   const [showLogin, setShowLogin] = useState(false);
   const [pwInput, setPwInput] = useState("");
   const [loginError, setLoginError] = useState(false);
-  const [draft, setDraft] = useState({ visited: false, date: "", note: "", video: "", photos: [] });
+  const [draft, setDraft] = useState({ visited: false, planned: false, date: "", note: "", video: "", photos: [] });
   const [saving, setSaving] = useState(false);
   const [coverPhoto, setCoverPhoto] = useState(null);
   const [coverUploading, setCoverUploading] = useState(false);
@@ -509,7 +510,7 @@ export default function TurkiyeGeziyorum() {
   const filtered = PROVINCES.filter((p) => activeRegion === "Tümü" || p.region === activeRegion);
 
   function openProvince(p) {
-    const existing = data[p.code] || { visited: false, date: "", note: "", video: "", photos: [] };
+    const existing = data[p.code] || { visited: false, planned: false, date: "", note: "", video: "", photos: [] };
     setDraft({ photos: [], ...existing });
     setSelected(p);
     fetchWeather(p.name);
@@ -825,6 +826,7 @@ export default function TurkiyeGeziyorum() {
               {filtered.map((p) => {
                 const entry = data[p.code];
                 const v = entry?.visited;
+                const planned = !v && entry?.planned;
                 const thumb = entry?.photos && entry.photos.length > 0 ? entry.photos[0] : null;
                 return (
                   <button
@@ -833,6 +835,8 @@ export default function TurkiyeGeziyorum() {
                     className={`relative text-left rounded-xl border overflow-hidden transition-all ${
                       v
                         ? "bg-[#1E2545] border-[#D9A544]/40"
+                        : planned
+                        ? "bg-[#182241] border-[#6B9FE8]/40"
                         : "bg-[#161C36] border-[#2A3358] hover:border-[#4A5590]"
                     }`}
                   >
@@ -844,13 +848,20 @@ export default function TurkiyeGeziyorum() {
                         <div className="text-[10px] text-[#6B7299] tracking-widest">{p.code}</div>
                         <div className="text-sm font-medium mt-0.5 leading-tight">{p.name}</div>
                       </div>
-                      {v && (
+                      {v ? (
                         <div
                           className="shrink-0 w-8 h-8 rounded-full border-2 border-[#D9A544] flex items-center justify-center -rotate-12 opacity-90"
                         >
                           <Check size={14} className="text-[#E8C275]" strokeWidth={3} />
                         </div>
-                      )}
+                      ) : planned ? (
+                        <div
+                          className="shrink-0 w-8 h-8 rounded-full border-2 border-[#6B9FE8] flex items-center justify-center opacity-90"
+                          title="Sıradaki durak"
+                        >
+                          <span className="text-xs">🧭</span>
+                        </div>
+                      ) : null}
                     </div>
                   </button>
                 );
@@ -975,7 +986,9 @@ export default function TurkiyeGeziyorum() {
                     )}
                   </>
                 ) : (
-                  <p className="text-sm text-[#6B7299]">Bu il henüz ziyaret edilmedi.</p>
+                  <p className="text-sm text-[#6B7299]">
+                    {draft.planned ? "🧭 Sıradaki durak — henüz gidilmedi." : "Bu il henüz ziyaret edilmedi."}
+                  </p>
                 )}
               </div>
             ) : (
@@ -984,10 +997,21 @@ export default function TurkiyeGeziyorum() {
                   <input
                     type="checkbox"
                     checked={draft.visited}
-                    onChange={(e) => setDraft({ ...draft, visited: e.target.checked })}
+                    onChange={(e) => setDraft({ ...draft, visited: e.target.checked, planned: e.target.checked ? false : draft.planned })}
                     className="w-4 h-4 accent-[#D9A544]"
                   />
                   Ziyaret edildi
+                </label>
+
+                <label className="flex items-center gap-2 text-sm cursor-pointer -mt-2">
+                  <input
+                    type="checkbox"
+                    checked={!!draft.planned && !draft.visited}
+                    disabled={draft.visited}
+                    onChange={(e) => setDraft({ ...draft, planned: e.target.checked })}
+                    className="w-4 h-4 accent-[#6B9FE8] disabled:opacity-40"
+                  />
+                  <span className={draft.visited ? "text-[#6B7299]" : ""}>Sıradaki durak (planlandı)</span>
                 </label>
 
                 <div>
